@@ -3,15 +3,6 @@
 pragma solidity ^0.8.0;
 contract ICE_Contract {
 
-//////////// In this prototype we assume the server agrees with the initial request of the client (during c.init and s.init phases)
-    // struct Init_Transactoin{
-    //     string source_currency;
-    //     string destination_currency;
-    //     address client;
-    //     address server; 
-    //     bool approved_by_server;
-    // }
-
     // Struct to store transaction details
     struct Transaction {
         uint256 amount; // The total amount (including premuim it transfers)
@@ -24,10 +15,6 @@ contract ICE_Contract {
         address server; // The address of the server with which the client wants to interact
         bytes32 transactionId;
         bytes32 evidence;// Provided by the client in the case of complaint
-        //bytes32 server_evidence;// Provided by the server, when it delivers the service
-        //bytes32 initial_transaction_id;// This random number will be generated locally by the client when it calls client_init() (resulting in creating an instance of 
-        // Init_Transactoin. The client needs to also provide this id when it calls sendTransaction() which sets field  initial_transaction_id to this id when
-        // an instance of Transaction is created for it. This approach allows the smart contract to connect Transaction to Init_Transactoin (check if the server has initially accepted cleints initial request) in server_init
         bool pending; // To track if the transaction is pending
         bool approved_by_server;
         bool transferred; // It determines if the client's amount has already been transferred to the server 
@@ -47,8 +34,6 @@ contract ICE_Contract {
         bool voted;
     }
 
-    //mapping(bytes32 => Init_Transactoin) public initial_trnasactions; // It includes the initial transaction that the client makes and
-    // sends to the smart contract (in Phase 4, C.Init()). To access its content a user locally generates a random bytes32.  
     mapping(address => Auditor_voting_rec[]) public auditor_votes;
     // Mapping from an address to an array of transactions
     mapping(address => Transaction[]) public transactions;
@@ -148,20 +133,6 @@ contract ICE_Contract {
         }
     }
 
-    // function client_init(string memory source_currency_, string memory destination_currency_, bytes32 rand_id, address server_) public{
-    //     initial_trnasactions[rand_id] = Init_Transactoin({source_currency: source_currency_, destination_currency: destination_currency_, 
-    //     client: msg.sender, server: server_, approved_by_server: false});
-    // }
-
-    // function server_init(bytes32 rand_id, address client_, bool response) public {
-    //     require(initial_trnasactions[rand_id].client == client_ && initial_trnasactions[rand_id].server == msg.sender, "Error--invalid informaiton");
-    //     initial_trnasactions[rand_id].approved_by_server = response;
-    // }
-
-    // function calPremium(uint256 transactionValue, address server) public view returns(uint256) {
-    //     //uint256 premium = transactionValue * riskFactor[server] * policy_duration * coverage / 100;
-    //     return transactionValue * riskFactor[server] * policy_duration * coverage / 100;
-    // }
 
     function calPremium(uint256 transactionValue, address server) public view returns(uint256) {
         // Scale factor to simulate decimal calculations (e.g., 1000 for 3 decimal places)
@@ -187,22 +158,6 @@ contract ICE_Contract {
         return res;
     }
 
-    // function extractVerdict(address client_address, bytes32 transactionId_) public view returns (uint256){
-    //     bool not_continu;
-    //     uint256 res = 0;
-    //     for(uint256 i = 0; i < transactions[client_address].length && !not_continu; i++) {
-    //         // Check if the total number of votes infavour of the client is greater than equal to auditors_counter*(1-threshold/100)
-    //         if(transactions[client_address][i].transactionId == transactionId_){
-    //             uint256 temp = transactions[client_address][i].auditors_counter - (transactions[client_address][i].auditors_counter * threshold) / 100;
-    //             if(transactions[client_address][i].votes >=  temp) {
-    //                 res = 1;
-    //             }
-    //             not_continu = true;
-    //         }
-    //     }
-    //     return res;
-    // }
-
     function addPremuim(address client, uint256 amount) internal{
         clientsPaidPremuim[client].push(amount);
     }
@@ -222,7 +177,6 @@ contract ICE_Contract {
     }
 
     // The client needs to transfer a correct amount of coin via this function. Specifically, it needs to transfer amunt: req_ + premium (recall that this function is payable and the cleint can directly send coins when calling this function
-
     function sendTransaction (address server_, uint256 req_) public payable{ // for the sake of simplicity, we let "req" contain only the value the client wants to exchange 
         require(msg.value > 0, "You must send some Ether");
         // Check if (1) a sufficient amount has been transferred, (2) the client wants to interact with a registered server, or (3) the contract has enough budget to serve the client
@@ -230,7 +184,7 @@ contract ICE_Contract {
         if( (msg.value < prem + req_) || (serversList[server_] != 1) || (checkBudget(req_, server_) == 0)) { 
             payable(msg.sender).transfer(msg.value); // If any of the above three conditions are not met, it refunds the client 
         }
-        else{
+        else {
             updatePendingTransaction();
             balances[msg.sender] += msg.value; // Update the client's balance
             // Creates a transaction (of type struct) for the payment the client made
@@ -372,6 +326,3 @@ contract ICE_Contract {
         }
     }
 }
-
-
-
