@@ -180,6 +180,7 @@ contract ICE_Contract {
     function sendTransaction (address server_, uint256 req_) public payable{ // for the sake of simplicity, we let "req" contain only the value the client wants to exchange 
         require(msg.value > 0, "You must send some Ether");
         // Check if (1) a sufficient amount has been transferred, (2) the client wants to interact with a registered server, or (3) the contract has enough budget to serve the client
+        req_ = req_ * 1 ether;
         uint256 prem = calPremium(req_, server_);
         if( (msg.value < prem + req_) || (serversList[server_] != 1) || (checkBudget(req_, server_) == 0)) { 
             payable(msg.sender).transfer(msg.value); // If any of the above three conditions are not met, it refunds the client 
@@ -299,7 +300,8 @@ contract ICE_Contract {
                         transactions[client_address][i].transferred = true; 
                         // Refund the client if it paid extra
                         if(transactions[client_address][i].amount > transactions[client_address][i].premium + transactions[client_address][i].req) {
-                            uint refund_amount_to_client = transactions[client_address][i].amount - transactions[client_address][i].premium - transactions[client_address][i].req;
+                            uint256 refund_amount_to_client = transactions[client_address][i].amount - transactions[client_address][i].premium - transactions[client_address][i].req;
+                            //refund_amount_to_client = refund_amount_to_client * 1 ether; 
                             payable(client_address).transfer(refund_amount_to_client); 
                         }
                     }
@@ -318,9 +320,9 @@ contract ICE_Contract {
                 final_verdict = transactions[client_address][i].votes;
                 uint256 temp = extractVerdict(client_address, i);
                 if( (temp == 1) && (transactions[client_address][i].pending == true) ){
-                    uint256 amount = compRemAmount(coverage, transactions[client_address][i].req);
+                    uint256 amount_ = compRemAmount(coverage, transactions[client_address][i].req);
                     transactions[client_address][i].pending = false;
-                    payable(client_address).transfer(amount);
+                    payable(client_address).transfer(amount_);
                 }
             }
         }
