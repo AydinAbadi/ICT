@@ -264,7 +264,7 @@ contract ICE_Contract {
         }
     }
 
-    // It registers a result of verification of a client request. This function will successfully terminate only if it's called by a registered server (and must meet other conditions)
+    // To register a result of verification of a client's request. This function will successfully terminate only if it's called by a registered server (and must meet other conditions)
     function verRequest(address client_address, bytes32 transactionId_, bool val) public {
         bool continu = false;
         for(uint256 i = 0; i < transactions[client_address].length && !continu; i++) {
